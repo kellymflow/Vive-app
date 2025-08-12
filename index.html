@@ -668,7 +668,20 @@ const AudioKit = (()=>{
   async function xylophoneSuccess(){ const base=880; await mallet({freq:base}); await mallet({freq:base*1.333}); await mallet({freq:base*1.781}); } 
   async function meh(){ await mallet({freq:523,dur:.2}); } 
   async function fail(){ await mallet({freq:220,dur:.3}); await mallet({freq:175,dur:.32}); } 
-  return {resume, xylophoneSuccess, meh, fail, get unlocked(){return unlocked;} };
+  function prime(){ 
+  // 거의 들리지 않는 아주 짧은 음으로 iOS/Android 오디오 권한 프라임
+  const g = ctx.createGain(); 
+  g.gain.value = 0.0001; 
+  const o = ctx.createOscillator(); 
+  o.type = 'sine'; 
+  o.frequency.value = 440; 
+  o.connect(g); 
+  g.connect(ctx.destination); 
+  const now = ctx.currentTime; 
+  o.start(now); 
+  o.stop(now + 0.05); 
+}
+  return { resume, xylophoneSuccess, meh, fail, prime, get unlocked(){return unlocked;} };
 })();
 window.addEventListener('pointerdown', function onFirst(){ if(!AudioKit.unlocked){ AudioKit.resume(); showToast('사운드 온','ok'); } window.removeEventListener('pointerdown', onFirst); }, {once:true});
 
