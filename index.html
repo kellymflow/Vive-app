@@ -130,6 +130,11 @@ function selectTarget(type){
   // 오디오 해제 안전망
   if(!AudioKit.unlocked){ AudioKit.resume(); AudioKit.prime(); }
   
+  // 모바일 오디오 해제(안전망)
+  if(!AudioKit.unlocked){
+    try { AudioKit.resume(); AudioKit.prime(); } catch(_) {}
+  }
+
   startGame();
 }
 
@@ -1050,6 +1055,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 런처 구성
   buildLauncher();
+  // ===== 모바일 오디오 해제 전역 바인딩 =====
+function bindAudioUnlock(){
+  let done = false;
+  const tryUnlock = () => {
+    if (done) return;
+    done = true;
+    try { AudioKit.resume(); AudioKit.prime(); } catch(_) {}
+    ['touchstart','pointerdown','click'].forEach(t=>{
+      document.removeEventListener(t, tryUnlock, true);
+    });
+  };
+  ['touchstart','pointerdown','click'].forEach(t=>{
+    document.addEventListener(t, tryUnlock, true);
+  });
+}
+document.addEventListener('DOMContentLoaded', bindAudioUnlock);
+  
 });
   </script>
 </body>
