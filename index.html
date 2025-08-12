@@ -126,6 +126,10 @@ function selectTarget(type){
   resetAll();
   launcher.classList.add('hidden');
   gameRoot.classList.remove('hidden');
+
+  // 오디오 해제 안전망
+  if(!AudioKit.unlocked){ AudioKit.resume(); AudioKit.prime(); }
+  
   startGame();
 }
 
@@ -683,7 +687,28 @@ const AudioKit = (()=>{
 }
   return { resume, xylophoneSuccess, meh, fail, prime, get unlocked(){return unlocked;} };
 })();
-window.addEventListener('pointerdown', function onFirst(){ if(!AudioKit.unlocked){ AudioKit.resume(); showToast('사운드 온','ok'); } window.removeEventListener('pointerdown', onFirst); }, {once:true});
+// 모바일 오디오 해제: 첫 제스처(click/touch/pointer)에서 한 번만 수행
+function bindAudioUnlock(){
+  let done = false;
+  const tryUnlock = () => {
+    if (done) return;
+    done = true;
+    try {
+      AudioKit.resume();
+      AudioKit.prime();                 // 무음 프라임
+      showToast('사운드 온','ok');      // 필요 없으면 지워도 됨
+    } catch(e) { /* noop */ }
+    ['touchstart','pointerdown','click'].forEach(t=>{
+      document.removeEventListener(t, tryUnlock, true);
+    });
+  };
+  ['touchstart','pointerdown','click'].forEach(t=>{
+    document.addEventListener(t, tryUnlock, true);
+  });
+}
+
+// DOMContentLoaded 때 등록
+document.addEventListener('DOMContentLoaded', bindAudioUnlock);
 
 const ICONS = { heart:`<svg viewBox="0 0 24 24" fill="#ef4444" xmlns="http://www.w3.org/2000/svg"><path d="M12 21s-6.716-4.297-9.192-7.23C.69 11.36 1.127 7.9 3.757 6.33A5.2 5.2 0 0 1 12 7.2a5.2 5.2 0 0 1 8.243-.87c2.63 1.57 3.066 5.03.95 7.44C18.716 16.703 12 21 12 21z"/></svg>`, spark:`<svg viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l2.2 5.8L20 10l-5.8 2.2L12 18l-2.2-5.8L4 10l5.8-2.2L12 2z"/></svg>`, broken:`<svg viewBox="0 0 24 24" fill="#9ca3af" xmlns="http://www.w3.org/2000/svg"><path d="M12 21s-6.716-4.297-9.192-7.23C.69 11.36 1.127 7.9 3.757 6.33c1.29-.77 2.77-.93 4.12-.54L10 9l-2 3 3 2-1 3 2 1 2-4-3-2 1-3 2-2a5.2 5.2 0 0 1 3.12.06c2.63 1.57 3.066 5.03.95 7.44C18.716 16.703 12 21 12 21z"/></svg>`, shard:`<svg viewBox="0 0 24 24" fill="#6b7280" xmlns="http://www.w3.org/2000/svg"><path d="M4 14l6-10 4 6-6 10-4-6z"/></svg>` };
 function spawnBurst(kind='pos', strength=6){ const count=Math.max(4,Math.min(14,Math.round(strength))); const rect=effectsLayer.getBoundingClientRect(); const centerX=rect.width/2; const baseY=rect.height*0.88; for(let i=0;i<count;i++){ const el=document.createElement('div'); el.className=`particle ${kind}`; const icon = kind==='pos' ? (Math.random()<.5?ICONS.heart:ICONS.spark) : (Math.random()<.6?ICONS.broken:ICONS.shard); el.innerHTML=icon; const angle=(Math.random()*80-40); const dist=40+Math.random()*40; const x=Math.cos(angle*Math.PI/180)*dist; const y=Math.sin(angle*Math.PI/180)*(kind==='pos'?-dist:dist); const rot=(Math.random()*120-60)+'deg'; const size=14+Math.random()*10+'px'; const dur=(700+Math.random()*600)+'ms'; el.style.left=(centerX-10+(Math.random()*20-10))+'px'; el.style.top=baseY+'px'; el.style.setProperty('--x',x+'px'); el.style.setProperty('--y',y+'px'); el.style.setProperty('--rot',rot); el.style.setProperty('--size',size); el.style.setProperty('--dur',dur); effectsLayer.appendChild(el); setTimeout(()=>el.remove(),1200);} }
@@ -747,6 +772,14 @@ function charmDelta(opt){
 }
 
 function handleOption(opt){
+    // 모바일에서 첫 클릭 시 오디오 해제 안전망
+  if(!AudioKit.unlocked){ 
+    try { 
+      AudioKit.resume(); 
+      AudioKit.prime(); 
+    } catch(_e){} 
+  }
+  
   if(!gameActive) return;
 
   addDialogue(opt.text, true);
