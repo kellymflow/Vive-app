@@ -15,7 +15,7 @@
     .chip{ background: var(--pink-100); color:#b4235b; }
     .btn-pink{ background: var(--pink-500); color:#fff; }
     .btn-pink:hover{ background: var(--pink-600);} 
-    .dialogue-bubble{ position:relative; background:#fff; border:1px solid #f3e5ea; border-radius:.9rem; padding:1.4rem 1.2rem; max-width:80%; align-self:flex-start; } /* 위아래 여백 확장 */
+    .dialogue-bubble{ position:relative; background:#fff; border:1px solid #f3e5ea; border-radius:.9rem; padding:1rem 1.1rem; max-width:80%; align-self:flex-start; }
     #effects-layer{ position:absolute; inset:0; pointer-events:none; overflow:hidden; }
     .badge{ font-variant-numeric: tabular-nums; }
     .particle{ position:absolute; width:18px; height:18px; opacity:0; will-change: transform, opacity; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));}
@@ -31,7 +31,7 @@
     .toast-item{ padding:.7rem 1.05rem; border-radius:9999px; color:#fff; font-weight:800; box-shadow:0 8px 24px rgba(0,0,0,.12); opacity:0; transform:translateY(10px); transition:all .25s ease; font-size:15px; letter-spacing:.2px; margin-top:.35rem; }
     .toast-item.show{ opacity:1; transform:translateY(0);} 
     #reply-pop{ position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); z-index:85; pointer-events:none; }
-    .reply-card{ background:#fff; border:1px solid #f3e5ea; border-radius:1rem; padding:1rem 1.2rem; box-shadow:0 12px 30px rgba(0,0,0,.12); max-width:90vw; width:22rem; opacity:0; transform:translateY(8px); transition: all .22s ease; text-align:center; }
+    .reply-card{ background:#fff; border:1px solid #f3e5ea; border-radius:1rem; padding:.9rem 1.1rem; box-shadow:0 12px 30px rgba(0,0,0,.12); max-width:90vw; width:22rem; opacity:0; transform:translateY(8px); transition: all .22s ease; text-align:center; }
     .reply-card.show{ opacity:1; transform:translateY(0); }
   </style>
 </head>
@@ -40,6 +40,7 @@
 <div id="reply-pop"></div>
 <div id="final-layer"></div>
 
+<!-- 런처 -->
 <section id="launcher" class="max-w-md mx-auto space-y-5">
   <header class="text-center space-y-3">
     <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full chip text-sm font-bold">소개팅 시뮬레이터</div>
@@ -53,6 +54,7 @@
   </div>
 </section>
 
+<!-- 게임 컨테이너 -->
 <section id="game-root" class="hidden max-w-md mx-auto mt-5">
   <div id="game-container" class="relative soft-card p-6 space-y-5">
     <div class="flex items-center justify-between">
@@ -82,15 +84,15 @@
     </div>
   </div>
 </section> 
-
-<script>
-'use strict';
-
-// ===== 전역 효과음 선언(파일 경로를 쓰는 경우) =====
+  <!-- 코드펜 JS 패널 내용 -->
+  <script>
+    'use strict';
+    
+// ===== 전역 효과음 선언 =====
 const sfxClick = new Audio('sounds/click.mp3');
 sfxClick.preload = 'auto';
-
-/* ========== 전역 상태/DOM ========== */
+    
+/* ========== 전역 상태/DOM (init에서 연결) ========== */
 const MBTIS = ["ENFP","ENFJ","ENTP","ENTJ","ESFP","ESFJ","ESTP","ESTJ","INFP","INFJ","INTP","INTJ","ISFP","ISFJ","ISTP","ISTJ"];
 let targetMbti = null; 
 let score = 100, currentRound = 0, strikes = 0, gameActive = true; 
@@ -98,7 +100,7 @@ const maxStrikes = 3;
 let chosenMbti = []; 
 let sparkStreak = 0, lastTag = null, keyBuff = false;
 
-// DOM refs
+// DOM refs (init에서 세팅)
 let launcher,row1,row2,randomBtn,gameRoot,backBtn,restartBtn,targetChip,dialogueArea,optionsArea,scoreText,scoreBarInner,resultModal,strikeBadge,progressText,effectsLayer,finalLayer,toast,replyPop;
 
 /* ========== 런처 ========== */
@@ -134,13 +136,74 @@ function selectTarget(type){
 }
 
 /* ========== 질문/옵션(요약) ========== */
-// (질문/옵션/템플릿/GREETINGS는 네가 준 그대로 유지)
-const QUESTIONS = { /* ... 그대로 ... */ };
-const PERSONA_OPTIONS = { /* ... 그대로 ... */ };
-const OPTION_TEMPLATES = { /* ... 그대로 ... */ };
-const GREETINGS = { /* ... 그대로 ... */ };
+const QUESTIONS = {
+  ENFP:["안녕! 오늘 느낌 좋아요. 요즘 갑자기 꽂힌 거 있어요?","어색함 깨는 당신만의 꿀팁 있어요?","코스는 반 계획 반 즉흥, 어때요?","지금 분위기에 어울리는 노래는요?","오늘 한 줄로 정리하자면요?"],
+  ENFJ:["반가워요! 텐션 맞추려면 제가 뭘 하면 좋을까요?","마음을 여는 질문, 어떤 게 잘 맞아요?","리드 vs 조율, 오늘은 뭐가 편해요?","대화에 온기 올리는 음악 취향은요?","오늘 함께해서 좋았던 포인트 한 줄?"],
+  ENTP:["바로 한 판 붙어볼까요? 최근에 생각 바뀐 주제 있어요?","지금 작은 실험 한다면 뭘 해볼래요?","룰 세우고 깨기 vs 바로 피벗, 오늘은?","아이디어 스파크 올라오는 사운드는요?","오늘 인사이트를 한 줄 트윗으로?"],
+  ENTJ:["시간 아낍시다. 오늘 딱 하나 목표 잡는다면요?","초반 10분, 분위기 장악 플랜은요?","빠른 결정 vs 여유 탐색, 어디에 투자해요?","집중 올라가는 음악 타입은요?","오늘의 성과를 한 문장으로요?"],
+  ESFP:["분위기 좋다! 지금 당장 재밌는 거 뭐 보여요?","얼음 깨는 첫 멘트, 본투비 있죠?","걷다가 끌리면 바로 멈추기, 괜찮죠?","몸이 먼저 반응하는 노래 하나!","오늘 베스트 컷 자막 뭐로 할까요?"],
+  ESFJ:["자리 편하죠? 더 편해지게 제가 뭘 하면 좋을까요?","첫 만남에서 따뜻해지는 포인트, 뭐가 있나요?","둘 다 무리 없는 타이밍으로 코스 맞출까요?","대화에 잘 깔리는 배경음 취향은요?","오늘의 감사 한 줄, 남겨볼까요?"],
+  ESTP:["액션으로 가죠. 근처에 작은 모험 하나?","어색함 빨리 푸는 치트키 뭐 써요?","효율 vs 우연 루트, 오늘은 어디에 베팅?","아드레날린 올라가는 첫 트랙은요?","오늘 하이라이트, 짧게 콜아웃!"],
+  ESTJ:["좋은 만남, 규칙 하나부터 합의할까요?","서로 시간 아끼는 대화 운영 방식은요?","정시 이동 vs 여유 탐색, 오늘은요?","집중 깨지지 않는 음악이면 좋겠죠?","오늘 회고를 결론 중심으로요."],
+  INFP:["살짝 조심스럽게. 요즘 마음 건드린 문장 있어요?","처음 만남에서 안전함을 주는 방법은요?","걷다가 작은 얘기 주워 담는 루트, 어때요?","가사 예쁜 노래 하나 들어요?","오늘의 감정, 시처럼 한 줄로요."],
+  INFJ:["차분하게 시작해요. 최근 깊게 생각한 주제는요?","대화의 깊이를 여는 질문, 뭐가 잘 맞아요?","의미 남는 동선, 어떻게 설계하면 좋을까요?","생각 정리되는 음악 결은요?","오늘의 요지, 한 문장 통찰로요."],
+  INTP:["호기심 체크부터. 요즘 파는 질문은요?","첫 만남에 시험해보고 싶은 대화 포맷 있어요?","경로 최적화 vs 실험 우회, 뭐가 재밌어요?","방해 안 되는 백그라운드 스펙은요?","오늘 가설과 결론, 요약하면요?"],
+  INTJ:["돌려 말 안 해요. 오늘 의도 한 문장으로요?","첫인상에서 확인하고 싶은 변수 하나?","목표 지향 vs 여유 탐색, 어디에 투자하죠?","사고 효율 올리는 음원 타입은요?","오늘 인사이트, 선언문처럼 정리!"],
+  ISFP:["느낌 좋은 출발. 지금 이 순간 좋아지는 요소 하나?","편안함 여는 첫 멘트, 당신 톤은요?","풍경 좋은 길로 살짝 돌아가도 괜찮죠?","잔잔하고 색감 예쁜 곡 하나 골라요.","오늘의 온도, 한 줄 기록해요."],
+  ISFJ:["편안하네요. 일주일 안정시키는 루틴 하나 공유해요.","처음에 가장 힘이 되는 배려는 뭐였나요?","부담 없고 차분한 루트로 시작해볼까요?","대화 방해되지 않는 잔잔한 음악은요?","오늘의 고마움, 짧게 한 줄로요."],
+  ISTP:["실용적으로 가요. 최근 직접 고친 거 있어요?","어색함 줄이는 빠른 셋업은요?","돌발에도 대응 가능한 동선, 어떤가요?","기분 정돈되는 미니멀 트랙 추천 있어요?","오늘 핵심만 건조하게 한 줄!"],
+  ISTJ:["먼저 체크부터. 오늘 일정 여유는요?","첫 대화의 순서와 규칙, 간단히 잡을까요?","시간 맞춰 이동 루트, 시작해볼까요?","집중 흐트러지지 않는 음악이죠?","오늘 회고, 간단 명료하게요."]
+};
 
-/* ========== 데이터 빌드/렌더 공용 ========== */
+/* 페르소나별 옵션 */
+const PERSONA_OPTIONS = { /* 그대로: 긴 블록이므로 생략 표시 없이 전체 유지하세요. 
+   네가 붙여 준 ENFP~ISTJ 옵션 배열 전부 포함 (여기서는 지면상 생략) */
+  ENFP:[ /* ... 네가 준 배열 그대로 ... */ ],
+  ENFJ:[ /* ... */ ],
+  ENTP:[ /* ... */ ],
+  ENTJ:[ /* ... */ ],
+  ESFP:[ /* ... */ ],
+  ESFJ:[ /* ... */ ],
+  ESTP:[ /* ... */ ],
+  ESTJ:[ /* ... */ ],
+  INFP:[ /* ... */ ],
+  INFJ:[ /* ... */ ],
+  INTP:[ /* ... */ ],
+  INTJ:[ /* ... */ ],
+  ISFP:[ /* ... */ ],
+  ISFJ:[ /* ... */ ],
+  ISTP:[ /* ... */ ],
+  ISTJ:[ /* ... */ ]
+};
+
+/* 공용 템플릿(폴백) — 기존과 동일 */
+const OPTION_TEMPLATES = {
+  spark:['지도 접고 그냥 걸어요. 끌리면 바로 들어가요.','미션 교환 어때요? 서로 하나 주고 10분 뒤 공유!','왼쪽만 보기 룰로 가다 끌리면 멈추기.','훅에서 터지는 노래 하나 골라요.','좋으면 지금 5분만 써서 다음 약속 잡죠.'],
+  safe: ['공통 관심사 한 가지로 5분 집중 대화.','두 군데만 정하고 나머진 가면서 결정.','핵심 한 곳 예약하고 나머진 현장 선택.','가사보다 리듬 좋은 시티팝.','업다운 있었는데 그래서 기억에 남아요.'],
+  trap: ['계획표대로 착착. 변수 최소.','질문 리스트를 순서대로 진행.','시간표대로 완주. 동선낭비 제로.','차트 1위로 무난하게 가요.','무난했어요.']
+};
+
+/* 첫 인사 */
+const GREETINGS = {
+  ENFP: "오! 오늘 분위기 좋네요. 가벼운 농담 몇 개 준비해왔는데, 들어볼래요?",
+  ENFJ: "와주셔서 반가워요. 편하게 말씀해 주세요, 분위기는 제가 부드럽게 만들게요.",
+  ENTP: "저는 새로운 상황에서 룰을 깨는 걸 즐겨요. 오늘도 아마 그럴 듯?",
+  ENTJ: "반갑습니다. 오늘은 서로 시간 값지게 써봅시다. 목표는 ‘재밌는 하루’ 어때요?",
+  ESFP: "오늘은 기분이 업이에요! 눈에 띄는 거 있으면 바로 가볼까요?",
+  ESFJ: "자리 편하죠? 저는 챙겨주는 거 자신 있어서, 걱정 없이 즐기시면 돼요.",
+  ESTP: "앉아서 얘기하는 것도 좋지만, 바로 뭔가 해보는 건 어떨까요?",
+  ESTJ: "만남도 전략이 필요하죠. 간단한 계획 하나 세우고 시작할까요?",
+  INFP: "서두르지 않아도 돼요. 오늘은 서로의 이야기에 조금씩 물들어가는 걸로 해요.",
+  INFJ: "처음이라 조금 조용할 수 있지만, 곧 깊은 얘기 나올 거예요.",
+  INTP: "저, 궁금한 게 많아요. 실험하듯 대화하면 재밌을 것 같아요.",
+  INTJ: "좋아요, 서로 원하는 게 뭔지 바로 맞춰가죠. 그게 편하잖아요.",
+  ISFP: "오늘은 발길 닿는 대로 가볼래요? 느낌이 좋은 날이거든요.",
+  ISFJ: "편안하게 시작하죠. 부담 없이 서로 알아가면 좋겠어요.",
+  ISTP: "바로 체험해보는 게 제 스타일이에요. 말보단 해보는 걸로.",
+  ISTJ: "기본부터 차근차근, 서두르지 않고 가는 게 좋죠."
+};
+
+/* 데이터 빌드 */
 function buildGameData(type){
   const qs = QUESTIONS[type] || QUESTIONS.ENFP;
   const persona = PERSONA_OPTIONS[type];
@@ -162,8 +225,8 @@ function buildGameData(type){
   ] }));
 }
 
+/* 공용 유틸 */
 function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
-
 function addDialogue(text, isPlayer=false){
   while(dialogueArea.childElementCount > 1){ dialogueArea.removeChild(dialogueArea.firstElementChild); }
   const row=document.createElement('div'); row.className='w-full flex';
@@ -172,18 +235,9 @@ function addDialogue(text, isPlayer=false){
   else { row.classList.add('justify-start'); bubble.style.background='#ffffff'; bubble.style.color='#1f2937'; bubble.style.border='1px solid #f3e5ea'; bubble.style.borderBottomLeftRadius='.35rem'; }
   row.appendChild(bubble); dialogueArea.appendChild(row); dialogueArea.scrollTop=dialogueArea.scrollHeight;
 }
-
-function updateMeters(){ 
-  score=Math.max(0,Math.min(200,score)); 
-  scoreText.textContent=`${score} / 200`; 
-  scoreBarInner.style.width=`${score/2}%`; 
-  strikeBadge.textContent=`${strikes} / ${maxStrikes}`; 
-  progressText.textContent=`${Math.min(currentRound+1,gameData.length)} / ${gameData.length}`; 
-}
-
+function updateMeters(){ score=Math.max(0,Math.min(200,score)); scoreText.textContent=`${score} / 200`; scoreBarInner.style.width=`${score/2}%`; strikeBadge.textContent=`${strikes} / ${maxStrikes}`; progressText.textContent=`${Math.min(currentRound+1,gameData.length)} / ${gameData.length}`; }
 function renderRound(idx){
-  optionsArea.innerHTML=''; 
-  const round=gameData[idx];
+  optionsArea.innerHTML=''; const round=gameData[idx];
   setTimeout(()=>{ 
     addDialogue(round.q); 
     shuffle([...round.opts]).forEach(opt=>{
@@ -197,7 +251,7 @@ function renderRound(idx){
   },200);
 }
 
-/* ========== 사운드/토스트/파티클 ========== */
+/* 사운드/토스트/파티클 */
 const AudioKit = (()=>{ 
   const ctx = new (window.AudioContext||window.webkitAudioContext)(); let unlocked=false; 
   function resume(){ if(ctx.state!=='running'){ ctx.resume(); } unlocked=true; } 
@@ -206,19 +260,40 @@ const AudioKit = (()=>{
   async function xylophoneSuccess(){ const base=880; await mallet({freq:base}); await mallet({freq:base*1.333}); await mallet({freq:base*1.781}); } 
   async function meh(){ await mallet({freq:523,dur:.2}); } 
   async function fail(){ await mallet({freq:220,dur:.3}); await mallet({freq:175,dur:.32}); } 
-  function prime(){ const g = ctx.createGain(); g.gain.value = 0.0001; const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.value = 440; o.connect(g); g.connect(ctx.destination); const now = ctx.currentTime; o.start(now); o.stop(now + 0.05); }
+  function prime(){ 
+    const g = ctx.createGain(); g.gain.value = 0.0001; 
+    const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.value = 440; 
+    o.connect(g); g.connect(ctx.destination); 
+    const now = ctx.currentTime; o.start(now); o.stop(now + 0.05); 
+  }
   return { resume, xylophoneSuccess, meh, fail, prime, get unlocked(){return unlocked;} };
 })();
-
-function spawnBurst(kind='pos', strength=6){ const count=Math.max(4,Math.min(14,Math.round(strength))); const rect=effectsLayer.getBoundingClientRect(); const centerX=rect.width/2; const baseY=rect.height*0.88; for(let i=0;i<count;i++){ const el=document.createElement('div'); el.className=`particle ${kind}`; const icon = kind==='pos' ? (Math.random()<.5?ICONS.heart:ICONS.spark) : (Math.random()<.6?ICONS.broken:ICONS.shard); el.innerHTML=icon; const angle=(Math.random()*80-40); const dist=40+Math.random()*40; const x=Math.cos(angle*Math.PI/180)*dist; const y=Math.sin(angle*Math.PI/180)*(kind==='pos'?-dist:dist); const rot=(Math.random()*120-60)+'deg'; const size=14+Math.random()*10+'px'; const dur=(700+Math.random()*600)+'ms'; el.style.left=(centerX-10+(Math.random()*20-10))+'px'; el.style.top=baseY+'px'; el.style.setProperty('--x',x+'px'); el.style.setProperty('--y',y+'px'); el.style.setProperty('--rot',rot); el.style.setProperty('--size',size); el.style.setProperty('--dur',dur); effectsLayer.appendChild(el); setTimeout(()=>el.remove(),1200);} }
-function addScore(delta){ if(!delta) return; score+=delta; if(delta>0) spawnBurst('pos', Math.min(12,4+delta/2)); else spawnBurst('neg', Math.min(12,4+Math.abs(delta)/2)); }
-function showToast(msg, kind='meh'){ const el=document.createElement('div'); el.className='toast-item'; el.style.background = kind==='ok'?'#16a34a':kind==='bad'?'#ef4444':'#64748b'; el.textContent=msg; toast.appendChild(el); requestAnimationFrame(()=>el.classList.add('show')); setTimeout(()=>{ el.classList.remove('show'); setTimeout(()=>el.remove(),250); },1200); }
-function showReply(text){ replyPop.innerHTML=''; const card=document.createElement('div'); card.className='reply-card'; card.innerHTML = `💬 ${text}`; replyPop.appendChild(card); requestAnimationFrame(()=>card.classList.add('show')); setTimeout(()=>{ card.classList.remove('show'); setTimeout(()=>{ replyPop.innerHTML=''; },200); }, 1300); }
+// 모바일 오디오 해제: 첫 제스처(click/touch/pointer)에서 한 번만 수행
+function bindAudioUnlock(){
+  let done = false;
+  const tryUnlock = () => {
+    if (done) return;
+    done = true;
+    try {
+      AudioKit.resume();
+      AudioKit.prime();
+      showToast('사운드 온','ok');
+    } catch(e) { /* noop */ }
+    ['touchstart','pointerdown','click'].forEach(t=>{
+      document.removeEventListener(t, tryUnlock, true);
+    });
+  };
+  ['touchstart','pointerdown','click'].forEach(t=>{
+    document.addEventListener(t, tryUnlock, true);
+  });
+}
+document.addEventListener('DOMContentLoaded', bindAudioUnlock);
 
 const ICONS = { heart:`<svg viewBox="0 0 24 24" fill="#ef4444" xmlns="http://www.w3.org/2000/svg"><path d="M12 21s-6.716-4.297-9.192-7.23C.69 11.36 1.127 7.9 3.757 6.33A5.2 5.2 0 0 1 12 7.2a5.2 5.2 0 0 1 8.243-.87c2.63 1.57 3.066 5.03.95 7.44C18.716 16.703 12 21 12 21z"/></svg>`, spark:`<svg viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l2.2 5.8L20 10l-5.8 2.2L12 18l-2.2-5.8L4 10l5.8-2.2L12 2z"/></svg>`, broken:`<svg viewBox="0 0 24 24" fill="#9ca3af" xmlns="http://www.w3.org/2000/svg"><path d="M12 21s-6.716-4.297-9.192-7.23C.69 11.36 1.127 7.9 3.757 6.33c1.29-.77 2.77-.93 4.12-.54L10 9l-2 3 3 2-1 3 2 1 2-4-3-2 1-3 2-2a5.2 5.2 0 0 1 3.12.06c2.63 1.57 3.066 5.03.95 7.44C18.716 16.703 12 21 12 21z"/></svg>`, shard:`<svg viewBox="0 0 24 24" fill="#6b7280" xmlns="http://www.w3.org/2000/svg"><path d="M4 14l6-10 4 6-6 10-4-6z"/></svg>` };
 
 /* ========== 규칙/흐름 ========== */
 function isFType(type){ return type && type[2] === 'F'; }
+
 function decorateReplyForType(type, base, tag){
   if(!isFType(type)) return base;
   if(tag === 'spark') return `${base} 설레요, 지금 이 느낌 계속 가요`;
@@ -230,23 +305,49 @@ function decorateReplyForType(type, base, tag){
 function applyHidden(opt){
   if(opt.tag === 'spark'){
     sparkStreak += 1;
-    if(sparkStreak >= 2){ addScore(6); showToast('콤보 보너스 +6','ok'); }
-  } else { sparkStreak = 0; }
-  if(opt.grantsKey){ keyBuff = true; }
-  else if(keyBuff && opt.tag === 'spark'){ addScore(4); keyBuff = false; showToast('키 시너지 +4','ok'); }
-  if(lastTag === 'trap' && opt.tag === 'trap'){ strikes += 1; addScore(-4); showToast('연속 실수 -4','bad'); }
+    if(sparkStreak >= 2){
+      addScore(6);
+      showToast('콤보 보너스 +6','ok');
+    }
+  } else {
+    sparkStreak = 0;
+  }
+
+  if(opt.grantsKey){
+    keyBuff = true;
+  } else if(keyBuff && opt.tag === 'spark'){
+    addScore(4);
+    keyBuff = false;
+    showToast('키 시너지 +4','ok');
+  }
+
+  if(lastTag === 'trap' && opt.tag === 'trap'){
+    strikes += 1;
+    addScore(-4);
+    showToast('연속 실수 -4','bad');
+  }
+
   lastTag = opt.tag;
 }
 
 function charmDelta(opt){
-  const isFinal = currentRound === gameData.length - 1; if(isFinal) return;
-  if(opt.tag === 'spark'){ showToast('매력이 상승했다','ok'); try{ AudioKit.xylophoneSuccess(); }catch(_e){} }
-  else if(opt.tag === 'trap'){ showToast('매력이 감소했다','bad'); try{ AudioKit.fail(); }catch(_e){} }
-  else { showToast('매력이 유지됐다','meh'); try{ AudioKit.meh(); }catch(_e){} }
+  const isFinal = currentRound === gameData.length - 1;
+  if(isFinal) return;
+
+  if(opt.tag === 'spark'){
+    showToast('매력이 상승했다','ok');
+    try{ AudioKit.xylophoneSuccess(); }catch(_e){}
+  } else if(opt.tag === 'trap'){
+    showToast('매력이 감소했다','bad');
+    try{ AudioKit.fail(); }catch(_e){}
+  } else {
+    showToast('매력이 유지됐다','meh');
+    try{ AudioKit.meh(); }catch(_e){}
+  }
 }
 
-// 모바일 첫 클릭에서 실제 소리 1회 재생 보장 + 실패 시 WebAudio 대체
 function handleOption(opt){
+  // 모바일 첫 클릭 시: 오디오 컨텍스트 해제 + 실제 소리 1회 재생 (파일 실패 시 WebAudio로 대체)
   if(!AudioKit.unlocked){
     try {
       AudioKit.resume();
@@ -307,7 +408,10 @@ function endGame(finalScore, dueToStrikes=false){
     iconEl.textContent = (tier==='fail') ? '💔' : (tier==='meh') ? '🙂' : '💖';
     iconEl.style.fontSize = '44px';
   }
-  if(tier !== 'fail'){ triggerFinalFX(tier); }
+
+  if(tier !== 'fail'){
+    triggerFinalFX(tier);
+  }
 
   const mbtiCount = chosenMbti.reduce((acc,t)=>{ acc[t]=(acc[t]||0)+1; return acc; },{});
   const topMbti = Object.entries(mbtiCount).sort((a,b)=>b[1]-a[1])[0]?.[0];
@@ -328,67 +432,130 @@ function endGame(finalScore, dueToStrikes=false){
 
 function triggerFinalFX(tier){
   finalLayer.innerHTML = '';
-  const cele = document.createElement('div'); cele.className = 'celebration'; finalLayer.appendChild(cele);
-  const iconsGood = ['💖','🌟','💫','✨','🧡','🎉']; const iconsBad  = ['💔','☔','⚡','🪨'];
-  const good = (tier==='great' || tier==='good'); const icons = good ? iconsGood : iconsBad;
-  const N  = good ? 72 : 48; const cx = window.innerWidth / 2; const cy = window.innerHeight * 0.45;
+  const cele = document.createElement('div');
+  cele.className = 'celebration';
+  finalLayer.appendChild(cele);
+
+  const iconsGood = ['💖','🌟','💫','✨','🧡','🎉'];
+  const iconsBad  = ['💔','☔','⚡','🪨'];
+  const good = (tier==='great' || tier==='good');
+  const icons = good ? iconsGood : iconsBad;
+
+  const N  = good ? 72 : 48;
+  const cx = window.innerWidth / 2;
+  const cy = window.innerHeight * 0.45;
+
   for(let i=0;i<N;i++){
-    const span = document.createElement('span'); span.className = 'burst'; span.textContent = icons[Math.floor(Math.random()*icons.length)];
+    const span = document.createElement('span');
+    span.className = 'burst';
+    span.textContent = icons[Math.floor(Math.random()*icons.length)];
     span.style.fontSize = (good ? '34px' : '28px');
-    const angle = (Math.PI*2*(i/N)) + (Math.random()*0.6-0.3); const r = 60 + Math.random()*160;
-    span.style.left = (cx + Math.cos(angle)*r) + 'px'; span.style.top  = (cy + Math.sin(angle)*r) + 'px';
-    span.style.animationDelay = (Math.random()*0.5) + 's'; cele.appendChild(span);
+
+    const angle = (Math.PI*2*(i/N)) + (Math.random()*0.6-0.3);
+    const r = 60 + Math.random()*160;
+
+    span.style.left = (cx + Math.cos(angle)*r) + 'px';
+    span.style.top  = (cy + Math.sin(angle)*r) + 'px';
+    span.style.animationDelay = (Math.random()*0.5) + 's';
+    cele.appendChild(span);
   }
 }
 
 function restartGame(){
-  score = 100; currentRound = 0; strikes = 0; chosenMbti = []; sparkStreak = 0; lastTag = null; keyBuff = false;
-  dialogueArea.innerHTML = ''; optionsArea.innerHTML = ''; resultModal.classList.add('hidden'); gameActive = true;
-  updateMeters(); startGame(true);
+  score = 100;
+  currentRound = 0;
+  strikes = 0;
+  chosenMbti = [];
+  sparkStreak = 0;
+  lastTag = null;
+  keyBuff = false;
+
+  dialogueArea.innerHTML = '';
+  optionsArea.innerHTML = '';
+  resultModal.classList.add('hidden');
+  gameActive = true;
+
+  updateMeters();
+  startGame(true);
 }
 
 function resetAll(){
-  score = 100; currentRound = 0; strikes = 0; chosenMbti = []; sparkStreak = 0; lastTag = null; keyBuff = false;
-  dialogueArea.innerHTML = ''; optionsArea.innerHTML = ''; resultModal.classList.add('hidden'); gameActive = true;
+  score = 100;
+  currentRound = 0;
+  strikes = 0;
+  chosenMbti = [];
+  sparkStreak = 0;
+  lastTag = null;
+  keyBuff = false;
+
+  dialogueArea.innerHTML = '';
+  optionsArea.innerHTML = '';
+  resultModal.classList.add('hidden');
+  gameActive = true;
+
   updateMeters();
 }
 
-/* 중앙 팝업 */
+/* 중앙 팝업(첫 인사 전용) */
 function showPopup(message, duration = 1600, onDone) {
   const popup = document.createElement('div');
-  popup.style.position = 'fixed'; popup.style.top = '50%'; popup.style.left = '50%';
-  popup.style.transform = 'translate(-50%, -50%)'; popup.style.zIndex = '9999';
-  popup.style.display = 'flex'; popup.style.justifyContent = 'center'; popup.style.alignItems = 'center';
+  popup.style.position = 'fixed';
+  popup.style.top = '50%';
+  popup.style.left = '50%';
+  popup.style.transform = 'translate(-50%, -50%)';
+  popup.style.zIndex = '9999';
+  popup.style.display = 'flex';
+  popup.style.justifyContent = 'center';
+  popup.style.alignItems = 'center';
   popup.style.pointerEvents = 'none';
+
   const card = document.createElement('div');
-  card.style.background = '#fff'; card.style.border = '2px solid #f8b4c0'; card.style.borderRadius = '16px';
-  card.style.padding = '32px 24px'; card.style.fontSize = '1.1rem'; card.style.color = '#c24373'; card.style.fontWeight = 'bold';
-  card.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)'; card.style.opacity = '0'; card.style.transform = 'scale(0.95)'; card.style.transition = 'all 0.18s ease';
-  card.innerHTML = message; popup.appendChild(card); document.body.appendChild(popup);
-  requestAnimationFrame(() => { card.style.opacity = '1'; card.style.transform = 'scale(1)'; });
-  setTimeout(() => { card.style.opacity = '0'; card.style.transform = 'scale(0.95)'; setTimeout(() => { popup.remove(); if (onDone) onDone(); }, 180); }, duration);
+  card.style.background = '#fff';
+  card.style.border = '2px solid #f8b4c0';
+  card.style.borderRadius = '16px';
+  card.style.padding = '32px 24px';
+  card.style.fontSize = '1.1rem';
+  card.style.color = '#c24373';
+  card.style.fontWeight = 'bold';
+  card.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+  card.style.opacity = '0';
+  card.style.transform = 'scale(0.95)';
+  card.style.transition = 'all 0.18s ease';
+  card.innerHTML = message;
+
+  popup.appendChild(card);
+  document.body.appendChild(popup);
+
+  requestAnimationFrame(() => {
+    card.style.opacity = '1';
+    card.style.transform = 'scale(1)';
+  });
+
+  setTimeout(() => {
+    card.style.opacity = '0';
+    card.style.transform = 'scale(0.95)';
+    setTimeout(() => {
+      popup.remove();
+      if (onDone) onDone();
+    }, 180);
+  }, duration);
 }
 
 function startGame() {
   gameData = buildGameData(targetMbti || 'ENFP');
   updateMeters();
+
   const hi = GREETINGS[targetMbti || 'ENFP'] || '안녕하세요! 편하게 시작해요.';
-  showPopup(hi, 1600, () => { renderRound(0); });
+
+  showPopup(hi, 1600, () => {
+    renderRound(0);
+  });
 }
 
-/* ===== 전역 오디오 해제 바인딩(한 번만) ===== */
-function bindAudioUnlock(){
-  let done = false;
-  const tryUnlock = () => {
-    if (done) return; done = true;
-    try { AudioKit.resume(); AudioKit.prime(); } catch(_) {}
-    ['touchstart','pointerdown','click'].forEach(t=>document.removeEventListener(t, tryUnlock, true));
-  };
-  ['touchstart','pointerdown','click'].forEach(t=>document.addEventListener(t, tryUnlock, true));
-}
-
+/* ===== 부트스트랩 (CodePen: JS 패널 전용) ===== */
 let gameData = [];
 document.addEventListener('DOMContentLoaded', () => {
+  // DOM refs 연결
   launcher     = document.getElementById('launcher');
   row1         = document.getElementById('row1');
   row2         = document.getElementById('row2');
@@ -409,15 +576,33 @@ document.addEventListener('DOMContentLoaded', () => {
   toast        = document.getElementById('toast');
   replyPop     = document.getElementById('reply-pop');
 
-  if (backBtn) backBtn.onclick = () => { resetAll(); gameRoot.classList.add('hidden'); launcher.classList.remove('hidden'); window.scrollTo({top:0,behavior:'smooth'}); };
-  if (restartBtn) restartBtn.onclick = () => { resultModal.classList.add('hidden'); gameRoot.classList.add('hidden'); launcher.classList.remove('hidden'); targetMbti = null; resetAll(); window.scrollTo({top:0, behavior:'smooth'}); };
+  // 런처 버튼 동작
+  if (backBtn) {
+    backBtn.onclick = () => {
+      resetAll();
+      gameRoot.classList.add('hidden');
+      launcher.classList.remove('hidden');
+      window.scrollTo({top:0,behavior:'smooth'});
+    };
+  }
+  if (restartBtn) {
+    restartBtn.onclick = () => {
+      resultModal.classList.add('hidden');
+      gameRoot.classList.add('hidden');
+      launcher.classList.remove('hidden');
+      targetMbti = null;
+      resetAll();
+      window.scrollTo({top:0, behavior:'smooth'});
+    };
+  }
 
+  // 초기 가시성
   if (launcher) launcher.classList.remove('hidden');
   if (gameRoot) gameRoot.classList.add('hidden');
 
+  // 런처 구성
   buildLauncher();
-  bindAudioUnlock(); // 전역 오디오 해제 바인딩
 });
-</script>
+  </script>
 </body>
 </html>
