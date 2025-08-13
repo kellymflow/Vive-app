@@ -18,18 +18,22 @@
     .dialogue-bubble{ position:relative; background:#fff; border:1px solid #f3e5ea; border-radius:.9rem; padding:1rem 1.1rem; max-width:80%; align-self:flex-start; }
     #effects-layer{ position:absolute; inset:0; pointer-events:none; overflow:hidden; }
     .badge{ font-variant-numeric: tabular-nums; }
+    /* 진행 파티클 */
     .particle{ position:absolute; width:18px; height:18px; opacity:0; will-change: transform, opacity; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));}
     .particle.pos{ animation: rise .9s ease-out forwards; }
     .particle.neg{ animation: fall .9s cubic-bezier(.2,.8,.2,1) forwards; }
     @keyframes rise{ 0%{opacity:0; transform: translate(var(--x,0), var(--y,0)) scale(.6);} 15%{opacity:1;} 100%{opacity:0; transform: translate(calc(var(--x)*1.4), calc(var(--y) - 90px)) scale(1.05);} }
     @keyframes fall{ 0%{opacity:0; transform: translate(var(--x,0), var(--y,0)) scale(.9);} 10%{opacity:1;} 100%{opacity:0; transform: translate(calc(var(--x)*1.2), calc(var(--y) + 100px)); } }
+    /* 결말 전용 */
     #final-layer{ position:fixed; inset:0; pointer-events:none; z-index:70; overflow:hidden; }
     .celebration{ position:fixed; inset:0; pointer-events:none; }
     .celebration .burst{ position:absolute; font-size:28px; animation: pop2 1.2s ease-out forwards; }
     @keyframes pop2{ 0%{ transform: scale(.6); opacity:0;} 20%{opacity:1;} 100%{ transform: scale(1.35) translateY(-10px); opacity:0;} }
+    /* 토스트 하단 고정 */
     #toast{ position:fixed; left:50%; transform:translateX(-50%); bottom:20px; display:flex; flex-direction:column; align-items:center; pointer-events:none; z-index:80; }
     .toast-item{ padding:.7rem 1.05rem; border-radius:9999px; color:#fff; font-weight:800; box-shadow:0 8px 24px rgba(0,0,0,.12); opacity:0; transform:translateY(10px); transition:all .25s ease; font-size:15px; letter-spacing:.2px; margin-top:.35rem; }
     .toast-item.show{ opacity:1; transform:translateY(0);} 
+    /* 답변 팝업 (NPC 응답 전용) */
     #reply-pop{ position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); z-index:85; pointer-events:none; }
     .reply-card{ background:#fff; border:1px solid #f3e5ea; border-radius:1rem; padding:.9rem 1.1rem; box-shadow:0 12px 30px rgba(0,0,0,.12); max-width:90vw; width:22rem; opacity:0; transform:translateY(8px); transition: all .22s ease; text-align:center; }
     .reply-card.show{ opacity:1; transform:translateY(0); }
@@ -87,11 +91,7 @@
   <!-- 코드펜 JS 패널 내용 -->
   <script>
     'use strict';
-    
-// ===== 전역 효과음 선언 =====
-const sfxClick = new Audio('sounds/click.mp3');
-sfxClick.preload = 'auto';
-    
+
 /* ========== 전역 상태/DOM (init에서 연결) ========== */
 const MBTIS = ["ENFP","ENFJ","ENTP","ENTJ","ESFP","ESFJ","ESTP","ESTJ","INFP","INFJ","INTP","INTJ","ISFP","ISFJ","ISTP","ISTJ"];
 let targetMbti = null; 
@@ -127,7 +127,10 @@ function selectTarget(type){
   launcher.classList.add('hidden');
   gameRoot.classList.remove('hidden');
 
-  // 오디오 해제 안전망(한 번만)
+  // 오디오 해제 안전망
+  if(!AudioKit.unlocked){ AudioKit.resume(); AudioKit.prime(); }
+
+  // 모바일 오디오 해제(안전망)
   if(!AudioKit.unlocked){
     try { AudioKit.resume(); AudioKit.prime(); } catch(_) {}
   }
@@ -155,25 +158,439 @@ const QUESTIONS = {
   ISTJ:["먼저 체크부터. 오늘 일정 여유는요?","첫 대화의 순서와 규칙, 간단히 잡을까요?","시간 맞춰 이동 루트, 시작해볼까요?","집중 흐트러지지 않는 음악이죠?","오늘 회고, 간단 명료하게요."]
 };
 
-/* 페르소나별 옵션 */
-const PERSONA_OPTIONS = { /* 그대로: 긴 블록이므로 생략 표시 없이 전체 유지하세요. 
-   네가 붙여 준 ENFP~ISTJ 옵션 배열 전부 포함 (여기서는 지면상 생략) */
-  ENFP:[ /* ... 네가 준 배열 그대로 ... */ ],
-  ENFJ:[ /* ... */ ],
-  ENTP:[ /* ... */ ],
-  ENTJ:[ /* ... */ ],
-  ESFP:[ /* ... */ ],
-  ESFJ:[ /* ... */ ],
-  ESTP:[ /* ... */ ],
-  ESTJ:[ /* ... */ ],
-  INFP:[ /* ... */ ],
-  INFJ:[ /* ... */ ],
-  INTP:[ /* ... */ ],
-  INTJ:[ /* ... */ ],
-  ISFP:[ /* ... */ ],
-  ISFJ:[ /* ... */ ],
-  ISTP:[ /* ... */ ],
-  ISTJ:[ /* ... */ ]
+/* 페르소나별 옵션 (당신이 쓰던 그대로 유지) */
+const PERSONA_OPTIONS = { ENFP:[
+    [
+      {tag:'spark', text:'지도 접고 그냥 걸을래요? 끌리면 바로 들어가요!', reply:'그 우연의 타이밍, 저도 좋아요.'},
+      {tag:'safe',  text:'공통 관심사 하나만 잡고 5분만 얘기해봐요.', reply:'부담 없고 밀도 좋아요.'},
+      {tag:'trap',  text:'계획표대로 이동해요. 변수는 최소로요.', reply:'오늘은 여유가 더 어울려요.'}
+    ],
+    [
+      {tag:'spark', text:'서로 즉흥 미션 하나씩 주고 10분 뒤 공유!', reply:'함께 만든 장면은 오래 가요.'},
+      {tag:'safe',  text:'두 군데만 정해두고 나머지는 현장 선택!', reply:'균형이 좋아요.'},
+      {tag:'trap',  text:'질문 리스트 순서대로 쭉 갈게요.', reply:'숨 쉴 틈이 필요해요.'}
+    ],
+    [
+      {tag:'spark', text:'왼쪽만 보기 룰로 가다가 끌리면 멈추기!', reply:'룰+즉흥, 리듬 좋네요.'},
+      {tag:'safe',  text:'핵심 한 곳만 예약, 나머지는 유연하게.', reply:'안정+자유 괜찮아요.'},
+      {tag:'trap',  text:'시간표대로 완주해요. 동선 낭비 없이.', reply:'효율은 좋은데 오늘 톤은 달라요.'}
+    ],
+    [
+      {tag:'spark', text:'도입 잔잔, 훅에서 터지는 노래 어때요?', reply:'장면 전환 제대로에요.'},
+      {tag:'safe',  text:'리듬 좋은 시티팝으로 가볍게.', reply:'분위기 받쳐줘요.'},
+      {tag:'trap',  text:'차트 1위로 무난하게 갈까요.', reply:'무난함이 개성을 덮을 때가 있어요.'}
+    ],
+    [
+      {tag:'spark', text:'좋으면 5분 더 써서 다음 약속 잡자!', reply:'바로 이어가는 추진력, 좋아요.'},
+      {tag:'safe',  text:'업다운 있었는데 그래서 기억에 남네요.', reply:'살아 있는 감상 좋아요.'},
+      {tag:'trap',  text:'음… 무난했어요.', reply:'엔드에 온기 한 줄만 더.'}
+    ]
+  ],
+  ENFJ:[
+    [
+      {tag:'spark', text:'처음이니까 호흡부터 맞춰봐요. 제가 리드할게요?', reply:'따뜻하게 이끌어주면 금방 편해져요.'},
+      {tag:'safe',  text:'천천히 서로 페이스 보면서 갈까요?', reply:'균형이 좋아요.'},
+      {tag:'trap',  text:'각자 하고 싶은 거 따로 해요.', reply:'함께의 감각이 사라져요.'}
+    ],
+    [
+      {tag:'spark', text:'서로에게 작은 미션 하나씩. 칭찬부터 시작!', reply:'온기가 바로 올라가네요.'},
+      {tag:'safe',  text:'공감 포인트 3개 찾아보기.', reply:'차분히 좋습니다.'},
+      {tag:'trap',  text:'논쟁 주제로 분위기 올려요.', reply:'지금은 연결이 먼저예요.'}
+    ],
+    [
+      {tag:'spark', text:'사진 한 장 찍고 서로에게 제목 붙여주기.', reply:'함께 만든 의미가 예뻐요.'},
+      {tag:'safe',  text:'좋았던 순간 돌아보기.', reply:'정리가 되네요.'},
+      {tag:'trap',  text:'평점 보고만 움직입시다.', reply:'온도가 식어요.'}
+    ],
+    [
+      {tag:'spark', text:'감성 R&B로 분위기 올릴까요?', reply:'대화가 부드러워져요.'},
+      {tag:'safe',  text:'잔잔한 어쿠스틱이면 충분해요.', reply:'따뜻해요.'},
+      {tag:'trap',  text:'EDM으로 텐션부터!', reply:'맥이 끊겨요.'}
+    ],
+    [
+      {tag:'spark', text:'오늘의 하이라이트 서로에게 한 줄로 남기기.', reply:'오래 기억될 것 같아요.'},
+      {tag:'safe',  text:'담번엔 좀 더 길게 걸을까요?', reply:'기대돼요.'},
+      {tag:'trap',  text:'그냥 뭐… 괜찮았어요.', reply:'온기가 아쉬워요.'}
+    ]
+  ],
+  ENTP:[
+    [
+      {tag:'spark', text:'규칙 하나 만들고 바로 깨볼까요?', reply:'룰을 깨야 재밌죠.'},
+      {tag:'safe',  text:'아이디어 3개만 뽑고 선택합시다.', reply:'합리적이에요.'},
+      {tag:'trap',  text:'정보 검색부터 깊게 하죠.', reply:'현장감이 날아가요.'}
+    ],
+    [
+      {tag:'spark', text:'상반된 주장 골라서 3분 스피치!', reply:'두뇌에 불 붙네요.'},
+      {tag:'safe',  text:'장단점 표로 정리?', reply:'깔끔하네요.'},
+      {tag:'trap',  text:'결론 나올 때까지 대기.', reply:'정체는 지루해요.'}
+    ],
+    [
+      {tag:'spark', text:'코스 선택을 동전 던지기로?', reply:'확률도 놀이가 돼요.'},
+      {tag:'safe',  text:'근처 2곳 비교 후 결정.', reply:'무난합니다.'},
+      {tag:'trap',  text:'줄 서는 데 합류.', reply:'시간 낭비는 노.'}
+    ],
+    [
+      {tag:'spark', text:'펑키한 비트로 뇌 깨우기.', reply:'아이디어가 솟아요.'},
+      {tag:'safe',  text:'로파이로 집중.', reply:'잔잔하네요.'},
+      {tag:'trap',  text:'무음으로 생각.', reply:'과하게 건조해요.'}
+    ],
+    [
+      {tag:'spark', text:'오늘의 인사이트를 밈으로 정리!', reply:'바로 공유각.'},
+      {tag:'safe',  text:'짧게 회고하고 마무리.', reply:'깔끔.'},
+      {tag:'trap',  text:'그냥 그런 하루였죠.', reply:'아쉬운 엔딩.'}
+    ]
+  ],
+  ENTJ:[
+    [
+      {tag:'spark', text:'오늘 목표 하나 정하고 움직일까요?', reply:'진행력 좋습니다.'},
+      {tag:'safe',  text:'대략 코스만 정하고 현장 조율하죠.', reply:'안정적 접근.'},
+      {tag:'trap',  text:'그냥 아무렇게나 돌아다녀요.', reply:'비효율입니다.'}
+    ],
+    [
+      {tag:'spark', text:'전시→회고 짧게 찍고 이동합시다.', reply:'완벽. 바로 가죠.'},
+      {tag:'safe',  text:'순서는 현장에서 보고 빠르게 결정!', reply:'유연성 인정합니다.'},
+      {tag:'trap',  text:'결정은 나중에 합시다.', reply:'지연은 리스크예요.'}
+    ],
+    [
+      {tag:'spark', text:'시간 단위로 체크하면서 이동해요.', reply:'정확. 신뢰 생겨요.'},
+      {tag:'safe',  text:'핵심만 지키고 나머진 유연하게.', reply:'괜찮습니다.'},
+      {tag:'trap',  text:'줄 서도 괜찮죠?', reply:'비효율. 패스.'}
+    ],
+    [
+      {tag:'spark', text:'재즈로 페이스 유지해요.', reply:'템포가 맞아요.'},
+      {tag:'safe',  text:'잔잔한 플리로.', reply:'무난.'},
+      {tag:'trap',  text:'시끄러운 곳으로 가요.', reply:'컨디션 무너져요.'}
+    ],
+    [
+      {tag:'spark', text:'한 줄 회고 후 바로 액션으로.', reply:'합격. 진행합시다.'},
+      {tag:'safe',  text:'괜찮았어요. 다음엔 지표도 보죠.', reply:'좋습니다.'},
+      {tag:'trap',  text:'그냥 그랬네요.', reply:'다음엔 더 나아지죠.'}
+    ]
+  ],
+  ESFP:[
+    [
+      {tag:'spark', text:'지금 당장 춤 추기 좋은 곳 알아요!', reply:'나 텐션 올랐어요!'},
+      {tag:'safe',  text:'가벼운 산책하면서 사진도 찍자.', reply:'빛 예뻐요.'},
+      {tag:'trap',  text:'앉아서 긴 대화부터.', reply:'몸이 먼저 움직이고 싶어요.'}
+    ],
+    [
+      {tag:'spark', text:'즉석 길거리 게임! 진 사람 음료 사기.', reply:'재밌다, 고고.'},
+      {tag:'safe',  text:'보드게임 카페 어때?', reply:'무난하게 재밌죠.'},
+      {tag:'trap',  text:'리뷰만 한참 읽자.', reply:'리듬이 식어요.'}
+    ],
+    [
+      {tag:'spark', text:'뷰 좋은 루프탑으로 급선회!', reply:'와, 그런 변주 좋아요.'},
+      {tag:'safe',  text:'사람 적은 카페로 이동.', reply:'편안해요.'},
+      {tag:'trap',  text:'대기 많은 핫플 가자.', reply:'줄 서면 기세가 꺾여요.'}
+    ],
+    [
+      {tag:'spark', text:'라틴/팝으로 분위기 업!', reply:'몸이 알아서 반응.'},
+      {tag:'safe',  text:'시티팝으로 잔잔 텐션.', reply:'무난무난.'},
+      {tag:'trap',  text:'무음으로 조용히.', reply:'심심해져요.'}
+    ],
+    [
+      {tag:'spark', text:'오늘 베스트 샷 찍고 바로 공유!', reply:'지금도 반짝거려요.'},
+      {tag:'safe',  text:'담엔 야외 페스 가자.', reply:'약속.'},
+      {tag:'trap',  text:'그냥 그랬다.', reply:'담엔 불꽃 쏘죠.'}
+    ]
+  ],
+  ESFJ:[
+    [
+      {tag:'spark', text:'자리가 괜찮으면 제가 간식 챙겨올게요.', reply:'세심해서 마음이 편해요.'},
+      {tag:'safe',  text:'먼저 서로 편한 점부터 확인할까요?', reply:'따뜻합니다.'},
+      {tag:'trap',  text:'각자 알아서 하죠.', reply:'함께의 감각이 줄어요.'}
+    ],
+    [
+      {tag:'spark', text:'칭찬 릴레이 한 번 하고 출발!', reply:'분위기가 살아요.'},
+      {tag:'safe',  text:'가까운 데부터 가볍게.', reply:'무리 없어요.'},
+      {tag:'trap',  text:'빡센 일정으로 꽉 채우기.', reply:'숨이 차요.'}
+    ],
+    [
+      {tag:'spark', text:'추억 스팟 공유하고 스토리 붙이기.', reply:'정이 쌓여요.'},
+      {tag:'safe',  text:'사진 한두 장으로 충분해요.', reply:'기록만 가볍게.'},
+      {tag:'trap',  text:'콘텐츠 소비만 쭉.', reply:'교감이 비어요.'}
+    ],
+    [
+      {tag:'spark', text:'보사노바로 공기 채우기.', reply:'대화가 잘 흘러요.'},
+      {tag:'safe',  text:'잔잔한 재즈.', reply:'편안해요.'},
+      {tag:'trap',  text:'하드락으로!', reply:'대화가 안 들려요.'}
+    ],
+    [
+      {tag:'spark', text:'오늘의 감사 한 줄 서로에게.', reply:'따뜻하게 마무리네요.'},
+      {tag:'safe',  text:'담에 조용히 또 보자.', reply:'좋아요.'},
+      {tag:'trap',  text:'그냥 그랬어.', reply:'한 줄 온기가 아쉬워요.'}
+    ]
+  ],
+  ESTP:[
+    [
+      {tag:'spark', text:'숨은 스팟 하나 바로 갑시다.', reply:'속도감 딱 좋아요.'},
+      {tag:'safe',  text:'산책하며 핀 찍어요.', reply:'끌리면 바로 들어가요.'},
+      {tag:'trap',  text:'앉아서 얘기만 길게 해요.', reply:'몸이 근질근질해요.'}
+    ],
+    [
+      {tag:'spark', text:'퀘스트 하나씩 주고 인증!', reply:'제 스타일이네요.'},
+      {tag:'safe',  text:'볼링 한 판 어때요?', reply:'몸 풀 겸 딱.'},
+      {tag:'trap',  text:'정보부터 모읍시다.', reply:'오늘은 실행이 먼저요.'}
+    ],
+    [
+      {tag:'spark', text:'5분 안에 다음 장소 정해요.', reply:'합의. 고민 길면 재미 식죠.'},
+      {tag:'safe',  text:'필요하면 바로 꺾어요.', reply:'유연하게 가죠.'},
+      {tag:'trap',  text:'유명한 곳 줄 서요.', reply:'대기줄은 별로.'}
+    ],
+    [
+      {tag:'spark', text:'비트 강한 팝으로 올려요!', reply:'리듬 타면 텐션 올라요.'},
+      {tag:'safe',  text:'라이트 힙합으로.', reply:'과하지 않게.'},
+      {tag:'trap',  text:'무음으로 갑시다.', reply:'그러면 졸릴 듯.'}
+    ],
+    [
+      {tag:'spark', text:'다음엔 액티비티 예약해요.', reply:'기록 세워요.'},
+      {tag:'safe',  text:'다음에 또 봐요.', reply:'가볍게 다시.'},
+      {tag:'trap',  text:'그냥 그랬어요.', reply:'스타일을 아직 못 찾았네요.'}
+    ]
+  ],
+  ESTJ:[
+    [
+      {tag:'spark', text:'만남의 규칙 한 줄만 합의하고 시작.', reply:'합의 완료. 좋습니다.'},
+      {tag:'safe',  text:'코스는 2곳만, 나머진 현장 판단.', reply:'균형이 괜찮네요.'},
+      {tag:'trap',  text:'계획을 시트로 꽉 채워요.', reply:'과도한 관리예요.'}
+    ],
+    [
+      {tag:'spark', text:'도착–활동–회고 3스텝로 진행.', reply:'체계가 안정감을 줘요.'},
+      {tag:'safe',  text:'벗어나면 바로 수정.', reply:'유연성 확보.'},
+      {tag:'trap',  text:'변수 없이 완주.', reply:'경직되기 쉬워요.'}
+    ],
+    [
+      {tag:'spark', text:'대기 많은 곳은 패스, 효율 루트.', reply:'좋은 판단입니다.'},
+      {tag:'safe',  text:'핵심만 소비.', reply:'무난합니다.'},
+      {tag:'trap',  text:'줄 서도 감수.', reply:'비효율이 커요.'}
+    ],
+    [
+      {tag:'spark', text:'집중 흐트러지지 않는 재즈.', reply:'일관성이 좋네요.'},
+      {tag:'safe',  text:'로파이로 편히.', reply:'지장 없어요.'},
+      {tag:'trap',  text:'소음 많은 클럽음악.', reply:'대화 품질 저하.'}
+    ],
+    [
+      {tag:'spark', text:'짧게 회고–다음 액션 바로 설정.', reply:'좋습니다. 실행합시다.'},
+      {tag:'safe',  text:'괜찮았어요.', reply:'담엔 더 효율적으로.'},
+      {tag:'trap',  text:'그냥 그랬어요.', reply:'결론이 비었네요.'}
+    ]
+  ],
+  INFP:[
+    [
+      {tag:'spark', text:'사람 적은 골목 산책부터 가요.', reply:'조용해서 대화가 또렷해요.'},
+      {tag:'safe',  text:'따뜻한 카페부터 가요.', reply:'편안해요.'},
+      {tag:'trap',  text:'핫플 줄부터 서요.', reply:'소음 많으면 흐려져요.'}
+    ],
+    [
+      {tag:'spark', text:'오늘 마음 움직인 장면 있었어요?', reply:'당신 웃을 때요.'},
+      {tag:'safe',  text:'분위기 편하죠?', reply:'부드러워요.'},
+      {tag:'trap',  text:'사진 많이 찍자요.', reply:'지금은 눈으로 담고 싶어요.'}
+    ],
+    [
+      {tag:'spark', text:'비 오면 비내음 맡으러 잠깐 나갈래요?', reply:'좋아해요.'},
+      {tag:'safe',  text:'창가 자리로 옮겨볼까요?', reply:'조용하면 더 좋아요.'},
+      {tag:'trap',  text:'빨리 이동해요.', reply:'천천히도 괜찮아요.'}
+    ],
+    [
+      {tag:'spark', text:'가사 예쁜 노래 들어봐요.', reply:'추천해 주세요.'},
+      {tag:'safe',  text:'잔잔한 플리 틀게요.', reply:'고마워요.'},
+      {tag:'trap',  text:'EDM 어때요?', reply:'오늘 톤엔 조금…'}
+    ],
+    [
+      {tag:'spark', text:'오늘 한 줄 시로 마무리해요.', reply:'설레네요.'},
+      {tag:'safe',  text:'다음에 또 걸어요.', reply:'기대할게요.'},
+      {tag:'trap',  text:'그냥 그랬네요.', reply:'조금 아쉬웠어요.'}
+    ]
+  ],
+  INFJ:[
+    [
+      {tag:'spark', text:'조용한 길로 걸으며 생각 나눌까요?', reply:'깊이감이 좋아요.'},
+      {tag:'safe',  text:'앉아 차분히 시작하죠.', reply:'편안합니다.'},
+      {tag:'trap',  text:'사람 붐비는 곳부터.', reply:'에너지가 쉽게 소모돼요.'}
+    ],
+    [
+      {tag:'spark', text:'요즘 붙잡고 있는 주제 하나 들려줘요.', reply:'대화가 선명해져요.'},
+      {tag:'safe',  text:'가벼운 근황부터.', reply:'무난해요.'},
+      {tag:'trap',  text:'푸는 얘기 없이 바로 핵심.', reply:'준비 시간이 필요해요.'}
+    ],
+    [
+      {tag:'spark', text:'의미 남는 스팟으로 우회해요.', reply:'장면이 살아나요.'},
+      {tag:'safe',  text:'동선은 간단히.', reply:'지치지 않아요.'},
+      {tag:'trap',  text:'빡빡한 루트로.', reply:'호흡이 거칠어져요.'}
+    ],
+    [
+      {tag:'spark', text:'피아노 중심의 재즈로.', reply:'생각이 잘 풀려요.'},
+      {tag:'safe',  text:'로파이로 무난하게.', reply:'배경에 좋아요.'},
+      {tag:'trap',  text:'과한 비트로.', reply:'내면 흐름이 끊겨요.'}
+    ],
+    [
+      {tag:'spark', text:'오늘 얻은 통찰 한 줄 서로에게.', reply:'의미있는 마침표네요.'},
+      {tag:'safe',  text:'담엔 더 여유롭게.', reply:'좋아요.'},
+      {tag:'trap',  text:'그냥 그랬어요.', reply:'깊이가 비었네요.'}
+    ]
+  ],
+  INTP:[
+    [
+      {tag:'spark', text:'궁금증 리스트에서 하나 뽑아 토론?', reply:'가설부터 세워봅시다.'},
+      {tag:'safe',  text:'관찰하고 천천히 파악.', reply:'데이터 모으죠.'},
+      {tag:'trap',  text:'분위기는 나중에, 지금은 효율.', reply:'놀이성이 필요해요.'}
+    ],
+    [
+      {tag:'spark', text:'작은 실험 설계하고 바로 실행.', reply:'바로 피드백 가능하죠.'},
+      {tag:'safe',  text:'케이스 스터디 공유.', reply:'정보 좋네요.'},
+      {tag:'trap',  text:'결론만 듣자.', reply:'맥락이 중요해요.'}
+    ],
+    [
+      {tag:'spark', text:'경로 최적화 vs 우회, A/B 테스트!', reply:'재밌는 비교예요.'},
+      {tag:'safe',  text:'근처 후보 2개 비교.', reply:'납득 가능.'},
+      {tag:'trap',  text:'인기 1위로 고정.', reply:'실험이 사라져요.'}
+    ],
+    [
+      {tag:'spark', text:'브레인댄스용 미니멀 테크노.', reply:'몰입됩니다.'},
+      {tag:'safe',  text:'화이트노이즈+로파이.', reply:'집중 유지.'},
+      {tag:'trap',  text:'가사 빵빵한 곡.', reply:'인지 리소스 분산.'}
+    ],
+    [
+      {tag:'spark', text:'오늘의 가설/결론 도식으로.', reply:'깔끔하네요.'},
+      {tag:'safe',  text:'짧게 정리하고 다음에.', reply:'좋습니다.'},
+      {tag:'trap',  text:'별 얘긴 없었죠.', reply:'정보 손실이네요.'}
+    ]
+  ],
+  INTJ:[
+    [
+      {tag:'spark', text:'오늘 의도 명확히. 목표 1개.', reply:'정확합니다.'},
+      {tag:'safe',  text:'핵심만 추려서 진행.', reply:'과잉이 없어요.'},
+      {tag:'trap',  text:'일단 가보면 알죠.', reply:'비효율이 큽니다.'}
+    ],
+    [
+      {tag:'spark', text:'변수 체크리스트 만들고 출발.', reply:'리스크 관리 좋군요.'},
+      {tag:'safe',  text:'현장 판단 여지는 둡시다.', reply:'합리적입니다.'},
+      {tag:'trap',  text:'결정은 운에 맡기죠.', reply:'통제 불능은 비추.'}
+    ],
+    [
+      {tag:'spark', text:'혼잡 구간은 회피 경로로.', reply:'시간 절약됩니다.'},
+      {tag:'safe',  text:'주요 목표만 달성.', reply:'충분해요.'},
+      {tag:'trap',  text:'대기 줄 참여.', reply:'손실이 큽니다.'}
+    ],
+    [
+      {tag:'spark', text:'집중 올리는 앰비언트.', reply:'사고 흐름이 좋아요.'},
+      {tag:'safe',  text:'피아노 솔로.', reply:'과하지 않네요.'},
+      {tag:'trap',  text:'소란한 EDM.', reply:'잡음이 과합니다.'}
+    ],
+    [
+      {tag:'spark', text:'한 줄 인사이트를 선언문으로.', reply:'명료합니다.'},
+      {tag:'safe',  text:'간단 회고.', reply:'충분합니다.'},
+      {tag:'trap',  text:'별 내용 없었죠.', reply:'정리 없이는 반복돼요.'}
+    ]
+  ],
+  ISFP:[
+    [
+      {tag:'spark', text:'빛 예쁜 길로 돌아가요.', reply:'색이 오늘을 바꿔요.'},
+      {tag:'safe',  text:'한적한 카페부터.', reply:'숨이 편해요.'},
+      {tag:'trap',  text:'사람 많은 데로.', reply:'금방 지쳐요.'}
+    ],
+    [
+      {tag:'spark', text:'귀여운 소품샵 들렀다 가요.', reply:'작은 설렘 좋아요.'},
+      {tag:'safe',  text:'조용히 그림 보러 갈래요?', reply:'차분해져요.'},
+      {tag:'trap',  text:'리뷰 높은 곳만.', reply:'감각이 사라져요.'}
+    ],
+    [
+      {tag:'spark', text:'공원 벤치에서 잠깐 그림 그리기.', reply:'손이 즐거워요.'},
+      {tag:'safe',  text:'사진 몇 장만.', reply:'빛만 담아도 충분.'},
+      {tag:'trap',  text:'빽빽한 이동.', reply:'피곤해져요.'}
+    ],
+    [
+      {tag:'spark', text:'어쿠스틱 라이브.', reply:'따뜻해요.'},
+      {tag:'safe',  text:'로파이 카페.', reply:'편안.'},
+      {tag:'trap',  text:'과한 비트.', reply:'머리가 아파요.'}
+    ],
+    [
+      {tag:'spark', text:'오늘의 색으로 서로를 표현해 보기.', reply:'예쁜 하루였네요.'},
+      {tag:'safe',  text:'다음엔 전시회 가요.', reply:'좋아요.'},
+      {tag:'trap',  text:'그냥 그랬어요.', reply:'온기가 덜했어요.'}
+    ]
+  ],
+  ISFJ:[
+    [
+      {tag:'spark', text:'가벼운 산책부터, 호흡 맞춰요.', reply:'안정감이 생겨요.'},
+      {tag:'safe',  text:'조용한 자리부터.', reply:'편안합니다.'},
+      {tag:'trap',  text:'복잡한 곳 먼저.', reply:'지칩니다.'}
+    ],
+    [
+      {tag:'spark', text:'서로 배려받았던 순간 하나씩 나누기.', reply:'마음이 따뜻해요.'},
+      {tag:'safe',  text:'좋아하는 루틴 얘기해요.', reply:'편안해요.'},
+      {tag:'trap',  text:'가벼운 장난으로 몰아가기.', reply:'조심스러워요.'}
+    ],
+    [
+      {tag:'spark', text:'한적한 골목으로 우회.', reply:'숨이 놓여요.'},
+      {tag:'safe',  text:'계획대로 천천히.', reply:'안정돼요.'},
+      {tag:'trap',  text:'빡빡한 스케줄.', reply:'피로가 커요.'}
+    ],
+    [
+      {tag:'spark', text:'피아노/현악 위주.', reply:'부드럽습니다.'},
+      {tag:'safe',  text:'로파이/재즈.', reply:'좋아요.'},
+      {tag:'trap',  text:'소음 많은 곡.', reply:'대화가 힘들어요.'}
+    ],
+    [
+      {tag:'spark', text:'오늘 고마웠던 점 한 줄.', reply:'따뜻한 마무리네요.'},
+      {tag:'safe',  text:'담에 조용히 또 만나기.', reply:'좋습니다.'},
+      {tag:'trap',  text:'그냥 그랬어요.', reply:'한 끗이 아쉬워요.'}
+    ]
+  ],
+  ISTP:[
+    [
+      {tag:'spark', text:'근처 수리해볼 만한 자전거 대여?', reply:'손이 근질근질하네요.'},
+      {tag:'safe',  text:'메뉴 간단히 보고 빠르게 주문.', reply:'효율적이죠.'},
+      {tag:'trap',  text:'앉아서 길게만 대화.', reply:'행동이 필요해요.'}
+    ],
+    [
+      {tag:'spark', text:'미니 퍼즐/방탈출 한 판.', reply:'직접 해보면 알죠.'},
+      {tag:'safe',  text:'산책하면서 관찰 포인트 찾기.', reply:'가볍게 좋아요.'},
+      {tag:'trap',  text:'리뷰만 탐독.', reply:'현장감이 없네요.'}
+    ],
+    [
+      {tag:'spark', text:'돌발 상황 가정하고 시나리오 짜보기.', reply:'대응력 테스트 좋네요.'},
+      {tag:'safe',  text:'최단 동선으로 이동.', reply:'실용적입니다.'},
+      {tag:'trap',  text:'복잡 루트 강행.', reply:'비효율.'}
+    ],
+    [
+      {tag:'spark', text:'미니멀 테크/드럼 앤 베이스.', reply:'집중됩니다.'},
+      {tag:'safe',  text:'로파이.', reply:'무난.'},
+      {tag:'trap',  text:'발라드.', reply:'졸릴 수도.'}
+    ],
+    [
+      {tag:'spark', text:'핵심만 남기고 깔끔하게 마무리.', reply:'좋아요. 다음에도 이렇게.'},
+      {tag:'safe',  text:'담에 또 보죠.', reply:'간결합니다.'},
+      {tag:'trap',  text:'그냥 그랬어요.', reply:'특징이 없었네요.'}
+    ]
+  ],
+  ISTJ:[
+    [
+      {tag:'spark', text:'일정과 여유, 둘 다 고려해 계획 합의.', reply:'기본기 탄탄합니다.'},
+      {tag:'safe',  text:'시간표만 가볍게.', reply:'충분합니다.'},
+      {tag:'trap',  text:'즉흥으로만.', reply:'변수가 과합니다.'}
+    ],
+    [
+      {tag:'spark', text:'우선순위 정하고 이동.', reply:'명료하네요.'},
+      {tag:'safe',  text:'주요만 체크.', reply:'좋습니다.'},
+      {tag:'trap',  text:'모두 다 보자.', reply:'과잉이에요.'}
+    ],
+    [
+      {tag:'spark', text:'정시 도착 가능한 루트.', reply:'신뢰가 생겨요.'},
+      {tag:'safe',  text:'혼잡 피해서 천천히.', reply:'괜찮습니다.'},
+      {tag:'trap',  text:'대기줄도 괜찮아요.', reply:'시간 손실.'}
+    ],
+    [
+      {tag:'spark', text:'집중 방해 없는 클래식.', reply:'안정적입니다.'},
+      {tag:'safe',  text:'재즈로.', reply:'무난합니다.'},
+      {tag:'trap',  text:'소란한 곡.', reply:'집중 저해.'}
+    ],
+    [
+      {tag:'spark', text:'오늘 체크리스트로 회고.', reply:'정리 잘 됐습니다.'},
+      {tag:'safe',  text:'다음에 이어서.', reply:'좋아요.'},
+      {tag:'trap',  text:'그냥 그랬네요.', reply:'기록이 없어요.'}
+    ]
+  ]
 };
 
 /* 공용 템플릿(폴백) — 기존과 동일 */
@@ -261,11 +678,18 @@ const AudioKit = (()=>{
   async function meh(){ await mallet({freq:523,dur:.2}); } 
   async function fail(){ await mallet({freq:220,dur:.3}); await mallet({freq:175,dur:.32}); } 
   function prime(){ 
-    const g = ctx.createGain(); g.gain.value = 0.0001; 
-    const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.value = 440; 
-    o.connect(g); g.connect(ctx.destination); 
-    const now = ctx.currentTime; o.start(now); o.stop(now + 0.05); 
-  }
+  // 거의 들리지 않는 아주 짧은 음으로 iOS/Android 오디오 권한 프라임
+  const g = ctx.createGain(); 
+  g.gain.value = 0.0001; 
+  const o = ctx.createOscillator(); 
+  o.type = 'sine'; 
+  o.frequency.value = 440; 
+  o.connect(g); 
+  g.connect(ctx.destination); 
+  const now = ctx.currentTime; 
+  o.start(now); 
+  o.stop(now + 0.05); 
+}
   return { resume, xylophoneSuccess, meh, fail, prime, get unlocked(){return unlocked;} };
 })();
 // 모바일 오디오 해제: 첫 제스처(click/touch/pointer)에서 한 번만 수행
@@ -276,8 +700,8 @@ function bindAudioUnlock(){
     done = true;
     try {
       AudioKit.resume();
-      AudioKit.prime();
-      showToast('사운드 온','ok');
+      AudioKit.prime();                 // 무음 프라임
+      showToast('사운드 온','ok');      // 필요 없으면 지워도 됨
     } catch(e) { /* noop */ }
     ['touchstart','pointerdown','click'].forEach(t=>{
       document.removeEventListener(t, tryUnlock, true);
@@ -287,9 +711,15 @@ function bindAudioUnlock(){
     document.addEventListener(t, tryUnlock, true);
   });
 }
+
+// DOMContentLoaded 때 등록
 document.addEventListener('DOMContentLoaded', bindAudioUnlock);
 
 const ICONS = { heart:`<svg viewBox="0 0 24 24" fill="#ef4444" xmlns="http://www.w3.org/2000/svg"><path d="M12 21s-6.716-4.297-9.192-7.23C.69 11.36 1.127 7.9 3.757 6.33A5.2 5.2 0 0 1 12 7.2a5.2 5.2 0 0 1 8.243-.87c2.63 1.57 3.066 5.03.95 7.44C18.716 16.703 12 21 12 21z"/></svg>`, spark:`<svg viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l2.2 5.8L20 10l-5.8 2.2L12 18l-2.2-5.8L4 10l5.8-2.2L12 2z"/></svg>`, broken:`<svg viewBox="0 0 24 24" fill="#9ca3af" xmlns="http://www.w3.org/2000/svg"><path d="M12 21s-6.716-4.297-9.192-7.23C.69 11.36 1.127 7.9 3.757 6.33c1.29-.77 2.77-.93 4.12-.54L10 9l-2 3 3 2-1 3 2 1 2-4-3-2 1-3 2-2a5.2 5.2 0 0 1 3.12.06c2.63 1.57 3.066 5.03.95 7.44C18.716 16.703 12 21 12 21z"/></svg>`, shard:`<svg viewBox="0 0 24 24" fill="#6b7280" xmlns="http://www.w3.org/2000/svg"><path d="M4 14l6-10 4 6-6 10-4-6z"/></svg>` };
+function spawnBurst(kind='pos', strength=6){ const count=Math.max(4,Math.min(14,Math.round(strength))); const rect=effectsLayer.getBoundingClientRect(); const centerX=rect.width/2; const baseY=rect.height*0.88; for(let i=0;i<count;i++){ const el=document.createElement('div'); el.className=`particle ${kind}`; const icon = kind==='pos' ? (Math.random()<.5?ICONS.heart:ICONS.spark) : (Math.random()<.6?ICONS.broken:ICONS.shard); el.innerHTML=icon; const angle=(Math.random()*80-40); const dist=40+Math.random()*40; const x=Math.cos(angle*Math.PI/180)*dist; const y=Math.sin(angle*Math.PI/180)*(kind==='pos'?-dist:dist); const rot=(Math.random()*120-60)+'deg'; const size=14+Math.random()*10+'px'; const dur=(700+Math.random()*600)+'ms'; el.style.left=(centerX-10+(Math.random()*20-10))+'px'; el.style.top=baseY+'px'; el.style.setProperty('--x',x+'px'); el.style.setProperty('--y',y+'px'); el.style.setProperty('--rot',rot); el.style.setProperty('--size',size); el.style.setProperty('--dur',dur); effectsLayer.appendChild(el); setTimeout(()=>el.remove(),1200);} }
+function addScore(delta){ if(!delta) return; score+=delta; if(delta>0) spawnBurst('pos', Math.min(12,4+delta/2)); else spawnBurst('neg', Math.min(12,4+Math.abs(delta)/2)); }
+function showToast(msg, kind='meh'){ const el=document.createElement('div'); el.className='toast-item'; el.style.background = kind==='ok'?'#16a34a':kind==='bad'?'#ef4444':'#64748b'; el.textContent=msg; toast.appendChild(el); requestAnimationFrame(()=>el.classList.add('show')); setTimeout(()=>{ el.classList.remove('show'); setTimeout(()=>el.remove(),250); },1200); }
+function showReply(text){ replyPop.innerHTML=''; const card=document.createElement('div'); card.className='reply-card'; card.innerHTML = `💬 ${text}`; replyPop.appendChild(card); requestAnimationFrame(()=>card.classList.add('show')); setTimeout(()=>{ card.classList.remove('show'); setTimeout(()=>{ replyPop.innerHTML=''; },200); }, 1300); }
 
 /* ========== 규칙/흐름 ========== */
 function isFType(type){ return type && type[2] === 'F'; }
@@ -347,14 +777,17 @@ function charmDelta(opt){
 }
 
 function handleOption(opt){
-  // 모바일 첫 클릭 시: 오디오 컨텍스트 해제 + 실제 소리 1회 재생 (파일 실패 시 WebAudio로 대체)
-  if(!AudioKit.unlocked){
-    try {
-      AudioKit.resume();
-      AudioKit.prime();
-      sfxClick.currentTime = 0;
-      sfxClick.play().catch(()=>AudioKit.meh());
-    } catch(_e){}
+     // 모바일에서 첫 클릭 시 오디오 해제 + 실제 효과음 재생
+  if(!AudioKit.unlocked){ 
+    try { 
+      AudioKit.resume(); 
+      AudioKit.prime(); 
+      // 첫 액션에서 실제 소리 재생 (sfxClick은 네 클릭 효과음 오디오 객체)
+      if (typeof sfxClick !== 'undefined') {
+        sfxClick.currentTime = 0;
+        sfxClick.play();
+      }
+    } catch(_e){} 
   }
 
   if(!gameActive) return;
@@ -409,6 +842,7 @@ function endGame(finalScore, dueToStrikes=false){
     iconEl.style.fontSize = '44px';
   }
 
+  // 실패시 파이널 파티클 없음
   if(tier !== 'fail'){
     triggerFinalFX(tier);
   }
@@ -496,8 +930,28 @@ function resetAll(){
   updateMeters();
 }
 
-/* 중앙 팝업(첫 인사 전용) */
+/* 중앙 팝업(첫 인사 전용/간단 토스트 대체) */
+function showPopup(message, duration = 1600, onDone){
+  replyPop.innerHTML = '';
+  const card = document.createElement('div');
+  card.className = 'reply-card';
+  card.innerHTML = message;
+  replyPop.appendChild(card);
+
+  requestAnimationFrame(()=> card.classList.add('show'));
+
+  setTimeout(()=>{
+    card.classList.remove('show');
+    setTimeout(()=>{
+      replyPop.innerHTML = '';
+      if (onDone) onDone();
+    }, 180);
+  }, duration);
+}
+
+/* 게임 시작: 첫 인사는 팝업, 그 후 라운드 1 시작 */
 function showPopup(message, duration = 1600, onDone) {
+  // 팝업 컨테이너
   const popup = document.createElement('div');
   popup.style.position = 'fixed';
   popup.style.top = '50%';
@@ -509,11 +963,12 @@ function showPopup(message, duration = 1600, onDone) {
   popup.style.alignItems = 'center';
   popup.style.pointerEvents = 'none';
 
+  // 팝업 카드
   const card = document.createElement('div');
   card.style.background = '#fff';
   card.style.border = '2px solid #f8b4c0';
   card.style.borderRadius = '16px';
-  card.style.padding = '32px 24px';
+  card.style.padding = '32px 24px'; // 위아래 크게 확장
   card.style.fontSize = '1.1rem';
   card.style.color = '#c24373';
   card.style.fontWeight = 'bold';
@@ -526,11 +981,13 @@ function showPopup(message, duration = 1600, onDone) {
   popup.appendChild(card);
   document.body.appendChild(popup);
 
+  // 등장 애니메이션
   requestAnimationFrame(() => {
     card.style.opacity = '1';
     card.style.transform = 'scale(1)';
   });
 
+  // duration 후 제거
   setTimeout(() => {
     card.style.opacity = '0';
     card.style.transform = 'scale(0.95)';
@@ -547,6 +1004,7 @@ function startGame() {
 
   const hi = GREETINGS[targetMbti || 'ENFP'] || '안녕하세요! 편하게 시작해요.';
 
+  // 첫 인사를 중앙 팝업으로 표시한 후 라운드 1 시작
   showPopup(hi, 1600, () => {
     renderRound(0);
   });
@@ -602,6 +1060,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 런처 구성
   buildLauncher();
+  // ===== 모바일 오디오 해제 전역 바인딩 =====
+function bindAudioUnlock(){
+  let done = false;
+  const tryUnlock = () => {
+    if (done) return;
+    done = true;
+    try { AudioKit.resume(); AudioKit.prime(); } catch(_) {}
+    ['touchstart','pointerdown','click'].forEach(t=>{
+      document.removeEventListener(t, tryUnlock, true);
+    });
+  };
+  ['touchstart','pointerdown','click'].forEach(t=>{
+    document.addEventListener(t, tryUnlock, true);
+  });
+}
+document.addEventListener('DOMContentLoaded', bindAudioUnlock);
+
 });
   </script>
 </body>
